@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本当に必要？チェッカー</title>
+  <style>
+    :root {
+      --bg: #f9f5f0;
+      --card: #ffffff;
+      --primary: #e07b6a;
+      --primary-dark: #c0614f;
+      --text: #333333;
+      --sub: #888888;
+      --border: #e0d8d0;
+      --yes: #6abf8e;
+      --no: #e07b6a;
+      --line: #06c755;
+    }
+    body.dark {
+      --bg: #1a1a1a;
+      --card: #2a2a2a;
+      --text: #f0f0f0;
+      --sub: #aaaaaa;
+      --border: #444444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dark-toggle {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 20px;
+      color: #fff;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      background: var(--card);
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: var(--sub);
+      transition: all 0.2s;
+    }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: bold;
+    }
+    .page { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-label { font-size: 0.75rem; color: var(--sub); margin-bottom: 6px; }
+    .progress-bar { background: var(--border); border-radius: 10px; height: 8px; }
+    .progress-fill {
+      background: var(--primary);
+      height: 8px;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card h2 { font-size: 1rem; margin-bottom: 14px; line-height: 1.5; }
+    .q-sub { font-size: 0.8rem; color: var(--sub); margin-bottom: 12px; }
+
+    .q1-options { display: grid; gap: 10px; }
+    .q1-option {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      color: var(--text);
+    }
+    .q1-option.selected {
+      border-color: var(--primary);
+      background: #fdf0ee;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .q2-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      gap: 10px;
+    }
+    .q2-item:last-child { border-bottom: none; }
+    .q-text { flex: 1; line-height: 1.4; }
+    .q2-btns { display: flex; gap: 6px; }
+    .q2-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      font-size: 0.8rem;
+      cursor: pointer;
+      background: var(--card);
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .q2-btn.yes { border-color: var(--yes); background: var(--yes); color: #fff; font-weight: bold; }
+    .q2-btn.no  { border-color: var(--no);  background: var(--no);  color: #fff; font-weight: bold; }
+
+    textarea {
+      width: 100%;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 90px;
+      background: var(--card);
+      color: var(--text);
+    }
+    textarea:focus { outline: none; border-color: var(--primary); }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-line { background: var(--line); color: #fff; font-size: 0.95rem; }
+    .btn-line:hover { background: #05a847; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .btn-danger {
+      background: transparent;
+      border: 2px solid var(--no);
+      color: var(--no);
+      font-size: 0.85rem;
+      padding: 10px;
+    }
+
+    .result-badge { text-align: center; padding: 24px 16px 16px; }
+    .result-icon { font-size: 3rem; display: block; margin-bottom: 8px; }
+    .result-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 6px; }
+    .result-sub { font-size: 0.85rem; color: var(--sub); }
+    .result-ok .result-title { color: var(--yes); }
+    .result-ng .result-title { color: var(--no); }
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-label { color: var(--sub); flex-shrink: 0; margin-right: 8px; }
+
+    .line-preview {
+      background: #e8f5e9;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: #2e7d32;
+      margin-bottom: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .memo-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .memo-input-row input {
+      flex: 1;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      background: var(--card);
+      color: var(--text);
+    }
+    .memo-input-row input:focus { outline: none; border-color: var(--primary); }
+    .price-input { max-width: 110px; }
+    .saved-badge {
+      display: none;
+      background: var(--yes);
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      margin-left: 8px;
+    }
+
+    .memo-list { display: grid; gap: 10px; }
+    .memo-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .memo-info { flex: 1; }
+    .memo-name { font-size: 0.95rem; font-weight: bold; margin-bottom: 4px; }
+    .memo-meta { font-size: 0.78rem; color: var(--sub); }
+    .memo-delete {
+      background: none;
+      border: none;
+      color: var(--sub);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .memo-empty { text-align: center; color: var(--sub); padding: 32px 0; font-size: 0.9rem; }
+
+    .setting-row { margin-bottom: 20px; }
+    .setting-label { font-size: 0.85rem; font-weight: bold; margin-bottom: 8px; }
+    .setting-sub { font-size: 0.78rem; color: var(--sub); margin-bottom: 8px; line-height: 1.5; }
+    .clear-all-wrap { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+    /* 再確認バナー */
+    .recheck-banner {
+      display: none;
+      background: #fff8e1;
+      border: 2px solid #ffe082;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #795548;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    body.dark .recheck-banner {
+      background: #2e2a1a;
+      border-color: #ffe082;
+      color: #ffe082;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🛍️ 本当に必要？</span>
+  <span style="font-size:0.85rem;opacity:0.9;">冷静になれるお買い物チェッカー</span>
+  <button class="dark-toggle" onclick="toggleDark()">🌙</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('check')">✅ チェック</div>
+  <div class="tab" onclick="switchTab('memo')">📝 保留メモ</div>
+  <div class="tab" onclick="switchTab('setting')">⚙️ 設定</div>
+</div>
+
+<!-- チェックタブ -->
+<div id="page-check" class="page active">
+  <div class="progress-wrap">
+    <div class="progress-label" id="progress-label">ステップ 1 / 4：今の状態</div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:25%"></div></div>
+  </div>
+
+  <!-- Q1 -->
+  <div id="step-1">
+    <!-- 再確認バナー -->
+    <div class="recheck-banner" id="recheck-banner">
+      🔄 入力内容を保持したまま再確認中です。選択肢を変更してもう一度結果を確認できます。
+    </div>
+    <div class="card">
+      <h2>今「上がってる」状態じゃない？</h2>
+      <p class="q-sub">当てはまるものをすべて選んでね（複数OK）</p>
+      <div class="q1-options">
+        <div class="q1-option" data-val="バイト終わりでテンション高め"      onclick="toggleQ1(this)">🎉 バイト終わりでテンション高め</div>
+        <div class="q1-option" data-val="疲れている・ストレスがたまっている" onclick="toggleQ1(this)">😩 疲れている・ストレスがたまっている</div>
+        <div class="q1-option" data-val="推しのことで頭がいっぱい"           onclick="toggleQ1(this)">💜 推しのことで頭がいっぱい</div>
+        <div class="q1-option" data-val="セール・限定・ラスト１の文字を見た" onclick="toggleQ1(this)">🏷️ セール・限定・ラスト１の文字を見た</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="goStep(2)">次へ →</button>
+  </div>
+
+  <!-- Q2 -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <h2>4つだけ答えて</h2>
+      <p class="q-sub">Noが1つでもある場合は保留を強くおすすめします</p>
+      <div class="q2-item">
+        <span class="q-text">似たやつ、もう持ってない？（色違い含む）</span>
+        <div class="q2-btns">
+          <button class="q2-btn" id="q2a-yes" onclick="setQ2('a','yes')">YES</button>
+          <button class="q2-btn" id="q2a-no"  onclick="setQ2('a','no')">NO</button>
+        </div>
+      </div>
+      <div class="q2-item">
+        <span class="q-text">数日後もまだ欲しいと思っていると思う？</span>
+        <div class="q2-btns">
+          <button class="q2-btn" id="q2b-yes" onclick="setQ2('b','yes')">YES</button>
+          <button class="q2-btn" id="q2b-no"  onclick="setQ2('b','no')">NO</button>
+        </div>
+      </div>
+      <div class="q2-item">
+        <span class="q-text">これを買っても、誰かにお金を借りない自信ある？</span>
+        <div class="q2-btns">
+          <button class="q2-btn" id="q2c-yes" onclick="setQ2('c','yes')">YES</button>
+          <button class="q2-btn" id="q2c-no"  onclick="setQ2('c','no')">NO</button>
+        </div>
+      </div>
+      <div class="q2-item">
+        <span class="q-text">既に決まっている予定（友達との約束）に差し支えない？</span>
+        <div class="q2-btns">
+          <button class="q2-btn" id="q2d-yes" onclick="setQ2('d','yes')">YES</button>
+          <button class="q2-btn" id="q2d-no"  onclick="setQ2('d','no')">NO</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="goStep(3)">次へ →</button>
+    <button class="btn btn-outline" onclick="goStep(1)" style="margin-top:8px">← 戻る</button>
+  </div>
+
+  <!-- Q3 -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <h2>今買わないといけない理由は？</h2>
+      <p class="q-sub">思いつかなければ空欄でもOK</p>
+      <textarea id="q3-input" placeholder="例：今日しかセールがない、サイズがこれしか残っていない…"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="goStep(4)">結果を見る →</button>
+    <button class="btn btn-outline" onclick="goStep(2)" style="margin-top:8px">← 戻る</button>
+  </div>
+
+  <!-- 結果 -->
+  <div id="step-4" style="display:none">
+    <div class="card" id="result-badge-card"></div>
+
+    <div class="card">
+      <h2>📝 保留メモに記録する</h2>
+      <div class="memo-input-row">
+        <input type="text"   id="result-product" placeholder="商品名"    oninput="onMemoInput()" />
+        <input type="number" id="result-price"   placeholder="金額(円)" class="price-input" oninput="onMemoInput()" />
+      </div>
+      <button class="btn btn-outline" onclick="savePendingMemo()" style="margin-top:4px">
+        📥 メモして帰る <span class="saved-badge" id="memo-saved-badge">保存済み ✓</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>📲 LINEでシェアする</h2>
+      <p class="q-sub" style="margin-bottom:10px">送る内容のプレビュー</p>
+      <div class="line-preview" id="line-preview-text"></div>
+      <button class="btn btn-line" onclick="shareToLine()">LINEで友達・グループに送る</button>
+    </div>
+
+    <!-- もう一度チェック：入力保持のまま再確認 -->
+    <button class="btn btn-outline" onclick="recheckFromStart()" style="margin-top:4px">
+      🔄 もう一度チェック（入力内容を保持）
+    </button>
+  </div>
+</div>
+
+<!-- 保留メモタブ -->
+<div id="page-memo" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 style="font-size:1rem">保留メモ一覧</h2>
+    <button class="btn btn-danger" style="width:auto;padding:6px 14px" onclick="clearAllMemos()">全削除</button>
+  </div>
+  <div class="memo-list" id="memo-list"></div>
+</div>
+
+<!-- 設定タブ -->
+<div id="page-setting" class="page">
+  <div class="card">
+    <div class="setting-row">
+      <div class="setting-label">🌙 ダークモード</div>
+      <div class="setting-sub">ヘッダー右上のボタンでも切り替えられます。</div>
+      <button class="btn btn-outline" onclick="toggleDark()">ダーク / ライト 切替</button>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">ℹ️ このアプリについて</div>
+      <div class="setting-sub">
+        購入前に冷静になるための4ステップチェッカーです。<br>
+        保留メモはこのブラウザにのみ保存されます（localStorage使用）。<br>
+        アカウント不要・通信不要でオフラインでも使えます。
+      </div>
+    </div>
+    <div class="clear-all-wrap">
+      <div class="setting-label" style="color:var(--no)">⚠️ データ削除</div>
+      <div class="setting-sub">保留メモをすべて削除します。この操作は元に戻せません。</div>
+      <button class="btn btn-danger" onclick="clearAllMemos()">保留メモをすべて削除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== localStorage =====
+  const STORAGE_KEY = 'honto_ni_hitsuyou_memos';
+  function saveMemos() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.memos));
+  }
+  function loadMemos() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch(e) { return []; }
+  }
+
+  // ===== State =====
+  let state = {
+    step: 1,
+    q1: [],
+    q2: { a: null, b: null, c: null, d: null },
+    q3: '',
+    result: null,
+    memos: loadMemos(),
+    pendingProduct: '',
+    pendingPrice: '',
+    isRechecking: false, // ← 再確認モードフラグ
+  };
+
+  // ===== ダークモード =====
+  function toggleDark() { document.body.classList.toggle('dark'); }
+
+  // ===== タブ切替 =====
+  function switchTab(name) {
+    const names = ['check','memo','setting'];
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (name === 'memo') renderMemoList();
+  }
+
+  // ===== プログレス =====
+  function updateProgress(step) {
+    const labels = ['','ステップ 1 / 4：今の状態','ステップ 2 / 4：冷静チェック','ステップ 3 / 4：買う理由','ステップ 4 / 4：結果'];
+    document.getElementById('progress-label').textContent = labels[step];
+    document.getElementById('progress-fill').style.width = (step * 25) + '%';
+  }
+
+  // ===== ステップ移動 =====
+  function goStep(n) {
+    if (n === 4) {
+      state.q3 = document.getElementById('q3-input').value;
+      state.result = calcResult();
+      state.isRechecking = false; // 結果到達でフラグ解除
+      document.getElementById('recheck-banner').style.display = 'none';
+      renderResult();
+    }
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none';
+    }
+    state.step = n;
+    updateProgress(n);
+    window.scrollTo(0, 0);
+  }
+
+  // ===== Q1 =====
+  function toggleQ1(el) {
+    el.classList.toggle('selected');
+    const val = el.dataset.val;
+    if (el.classList.contains('selected')) {
+      if (!state.q1.includes(val)) state.q1.push(val);
+    } else {
+      state.q1 = state.q1.filter(v => v !== val);
+    }
+  }
+
+  // ===== Q2 =====
+  function setQ2(key, val) {
+    state.q2[key] = val;
+    ['yes','no'].forEach(v => {
+      document.getElementById('q2' + key + '-' + v).className = 'q2-btn' + (v === val ? ' ' + v : '');
+    });
+  }
+
+  // ===== 結果計算 =====
+  function calcResult() {
+    const noCount = Object.values(state.q2).filter(v => v === 'no').length;
+    return (noCount >= 1 || state.q1.length >= 2) ? 'ng' : 'ok';
+  }
+
+  // ===== 結果レンダリング =====
+  function renderResult() {
+    const isOk = state.result === 'ok';
+    const q2labels = { a:'似たものを持っていない', b:'数日後も欲しい', c:'借金しない自信', d:'予定に差し支えない' };
+    document.getElementById('result-badge-card').innerHTML = `
+      <div class="result-badge ${isOk ? 'result-ok' : 'result-ng'}">
+        <span class="result-icon">${isOk ? '🟢' : '🛑'}</span>
+        <div class="result-title">${isOk ? '買ってOK！' : '今日はやめとこ！'}</div>
+        <div class="result-sub">${isOk ? '全チェッククリア。自信を持って買おう！' : 'NOが1つ以上あったよ。保留メモに記録して帰ろう。'}</div>
+      </div>
+      <div style="margin-top:12px">
+        ${state.q1.length > 0 ? `<div class="summary-item"><span class="summary-label">テンション要因</span><span>${state.q1.join('・')}</span></div>` : ''}
+        ${Object.entries(q2labels).map(([k, label]) =>
+          state.q2[k] ? `<div class="summary-item"><span class="summary-label">${label}</span><span>${state.q2[k] === 'yes' ? '✅' : '❌'}</span></div>` : ''
+        ).join('')}
+        ${state.q3 ? `<div class="summary-item"><span class="summary-label">買う理由</span><span>${state.q3}</span></div>` : ''}
+      </div>
+    `;
+    // inputに保持されている値を復元
+    document.getElementById('result-product').value = state.pendingProduct || '';
+    document.getElementById('result-price').value   = state.pendingPrice   || '';
+    document.getElementById('memo-saved-badge').style.display = 'none';
+    updateLinePreview();
+  }
+
+  // ===== 保留メモ入力（リアルタイム） =====
+  function onMemoInput() {
+    state.pendingProduct = document.getElementById('result-product').value;
+    state.pendingPrice   = document.getElementById('result-price').value;
+    updateLinePreview();
+  }
+
+  // ===== LINEテキスト生成 =====
+  function buildLineText() {
+    const isOk = state.result === 'ok';
+    const date = new Date().toLocaleDateString('ja-JP');
+    const q2labels = { a:'似たものを持っていない', b:'数日後も欲しい', c:'借金しない自信', d:'予定に差し支えない' };
+    let msg = `🛒 購入チェック結果\n━━━━━━━━━━━━\n`;
+    msg += isOk
+      ? `🟢 買ってOK！\n全チェッククリア。自信を持って買おう！\n`
+      : `🛑 今日はやめとこ！\nNOが1つ以上あったよ。保留メモに記録して帰ろう。\n`;
+    if (state.q1.length > 0) msg += `\n【テンション要因】\n${state.q1.map(v => '・' + v).join('\n')}\n`;
+    const q2entries = Object.entries(state.q2).filter(([, v]) => v);
+    if (q2entries.length > 0) {
+      msg += `\n【YES/NOチェック】\n`;
+      q2entries.forEach(([k, v]) => { msg += `  ${q2labels[k]}：${v === 'yes' ? '✅' : '❌'}\n`; });
+    }
+    if (state.q3) msg += `\n【買う理由】\n${state.q3}\n`;
+    if (state.pendingProduct) {
+      msg += `\n【気になった商品】\n  商品名：${state.pendingProduct}\n`;
+      if (state.pendingPrice) msg += `  金額：¥${Number(state.pendingPrice).toLocaleString()}\n`;
+    }
+    msg += `\n📅 ${date}`;
+    return msg;
+  }
+
+  function updateLinePreview() {
+    const el = document.getElementById('line-preview-text');
+    if (el) el.textContent = buildLineText();
+  }
+
+  function shareToLine() {
+    window.open('https://line.me/R/share?text=' + encodeURIComponent(buildLineText()), '_blank');
+  }
+
+  // ===== 保留メモ保存 =====
+  function savePendingMemo() {
+    const product = (state.pendingProduct || '').trim();
+    const price   = (state.pendingPrice   || '').trim();
+    if (!product) { alert('商品名を入力してください'); return; }
+    state.memos.push({
+      id: Date.now(),
+      product,
+      price,
+      date: new Date().toLocaleDateString('ja-JP'),
+    });
+    saveMemos();
+    document.getElementById('memo-saved-badge').style.display = 'inline';
+    renderMemoList();
+  }
+
+  // ===== メモ一覧レンダリング =====
+  function renderMemoList() {
+    const container = document.getElementById('memo-list');
+    if (state.memos.length === 0) {
+      container.innerHTML = '<div class="memo-empty">まだ保留メモはありません 🛍️</div>';
+      return;
+    }
+    container.innerHTML = [...state.memos].reverse().map(m => `
+      <div class="memo-card">
+        <div class="memo-info">
+          <div class="memo-name">🛍️ ${m.product}</div>
+          <div class="memo-meta">${m.price ? '¥' + Number(m.price).toLocaleString() + '　' : ''}${m.date}</div>
+        </div>
+        <button class="memo-delete" onclick="deleteMemo(${m.id})">🗑️</button>
+      </div>
+    `).join('');
+  }
+
+  // ===== メモ削除 =====
+  function deleteMemo(id) {
+    if (!confirm('このメモを削除しますか？')) return;
+    state.memos = state.memos.filter(m => m.id !== id);
+    saveMemos();
+    renderMemoList();
+  }
+
+  // ===== 全削除 =====
+  function clearAllMemos() {
+    if (!confirm('保留メモをすべて削除します。よろしいですか？')) return;
+    state.memos = [];
+    saveMemos();
+    renderMemoList();
+  }
+
+  // ===== もう一度チェック（入力内容を保持したままステップ1へ） =====
+  function recheckFromStart() {
+    // stateの回答はそのまま保持、再確認フラグだけ立てる
+    state.isRechecking = true;
+
+    // ステップ表示をステップ1に切替
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('step-' + i).style.display = i === 1 ? 'block' : 'none';
+    }
+
+    // 再確認バナーを表示
+    document.getElementById('recheck-banner').style.display = 'block';
+
+    // Q1：stateに保持されている選択肢をUIに反映
+    document.querySelectorAll('.q1-option').forEach(el => {
+      el.classList.toggle('selected', state.q1.includes(el.dataset.val));
+    });
+
+    // Q2：stateに保持されているYES/NOをUIに反映
+    ['a','b','c','d'].forEach(k => {
+      ['yes','no'].forEach(v => {
+        const el = document.getElementById('q2' + k + '-' + v);
+        if (el) el.className = 'q2-btn' + (state.q2[k] === v ? ' ' + v : '');
+      });
+    });
+
+    // Q3：stateの値をテキストエリアに反映
+    document.getElementById('q3-input').value = state.q3 || '';
+
+    updateProgress(1);
+    window.scrollTo(0, 0);
+  }
+
+  // ===== 初期化 =====
+  renderMemoList();
+</script>
+</body>
+</html>
